@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>VCF to Excel Converter</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>📤 Convert Your VCF to Excel</h2>
+  <input type="file" id="vcfInput" accept=".vcf">
+  <br><br>
+  <button onclick="convertVCF()">🔄 Convert to Excel</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    function convertVCF() {
+      const input = document.getElementById("vcfInput");
+      if (!input.files.length) {
+        alert("Please upload a VCF file first.");
+        return;
+      }
+
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const lines = e.target.result.split(/\r?\n/);
+        const contacts = [["Name", "Phone", "Email"]];
+
+        let name = "", phone = "", email = "";
+
+        lines.forEach(line => {
+          line = line.trim();
+          if (line.startsWith("FN:")) {
+            name = line.substring(3);
+          } else if (line.startsWith("TEL")) {
+            const tel = line.split(":")[1];
+            phone = tel.replace(/[^\d+]/g, "");
+          } else if (line.startsWith("EMAIL")) {
+            email = line.split(":")[1];
+          } else if (line === "END:VCARD") {
+            contacts.push([name, phone, email]);
+            name = phone = email = "";
+          }
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(contacts);
+        XLSX.utils.book_append_sheet(wb, ws, "Contacts");
+        XLSX.writeFile(wb, "contacts.xlsx");
+      };
+
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
